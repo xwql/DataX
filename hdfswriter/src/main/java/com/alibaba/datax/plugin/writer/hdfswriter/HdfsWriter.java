@@ -186,8 +186,10 @@ public class HdfsWriter extends Writer {
                     hdfsHelper.deleteFiles(existFilePaths);
                 }
             }else{
-                throw DataXException.asDataXException(HdfsWriterErrorCode.ILLEGAL_VALUE,
-                        String.format("您配置的path: [%s] 不存在, 请先在hive端创建对应的数据库和表.", path));
+                //不存在时增加新增目录
+                Path add_path = new Path(path);
+                LOG.info(String.format("您配置的目录不存在[%s],自动新建该目录", path));
+                hdfsHelper.addDir(add_path);
             }
         }
 

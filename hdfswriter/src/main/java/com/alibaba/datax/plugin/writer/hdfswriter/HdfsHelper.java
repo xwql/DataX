@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat;
 import org.apache.hadoop.hive.ql.io.orc.OrcSerde;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -32,6 +33,7 @@ import parquet.schema.PrimitiveType;
 import parquet.schema.Types;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -437,6 +439,9 @@ public  class HdfsHelper {
                 case FLOAT:
                     objectInspector = ObjectInspectorFactory.getReflectionObjectInspector(Float.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
                     break;
+                case DECIMAL:
+                    objectInspector = ObjectInspectorFactory.getReflectionObjectInspector(HiveDecimal.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
+                    break;
                 case DOUBLE:
                     objectInspector = ObjectInspectorFactory.getReflectionObjectInspector(Double.class, ObjectInspectorFactory.ObjectInspectorOptions.JAVA);
                     break;
@@ -521,6 +526,9 @@ public  class HdfsHelper {
                                 break;
                             case DOUBLE:
                                 recordList.add(column.asDouble());
+                                break;
+                            case DECIMAL:
+                                recordList.add(HiveDecimal.create(new BigDecimal(rowData)));
                                 break;
                             case STRING:
                             case VARCHAR:
@@ -625,5 +633,19 @@ public  class HdfsHelper {
             }
         }
         return typeBuilder.named("m").toString();
+    }
+
+    /**
+     * 创建目录
+     * @param add_path 目录
+     */
+    public void addDir(Path add_path) {
+        try {
+            fileSystem.mkdirs(add_path);
+        } catch (IOException e) {
+            String message = String.format("创建目录[%s]时发生网络IO异常,请检查您的网络是否正常！", add_path);
+            LOG.error(message);
+            throw DataXException.asDataXException(HdfsWriterErrorCode.CONNECT_HDFS_IO_ERROR, e);
+        }
     }
 }
